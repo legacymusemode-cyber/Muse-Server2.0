@@ -420,7 +420,7 @@ async function handleUnleash({ chapterContent, characterTags, storyTags, catalys
     { role: "user", content: `Continue this story. Pick up EXACTLY where it ends and keep going:\n\n${chapterContent}` }
   ];
   
-  return await callAI(messages, 0.9, 3000, 'unleash'); // <--- ADD THIS
+  return await callAI(messages, 0.85, 2000, 'unleash'); // <--- ADD THIS
 }
 
 // ============================================
@@ -444,7 +444,7 @@ async function handleNoMercy({ selectedText }) {
     }
   ];
   
-  return await callAI(messages, 0.9, 3000, 'NoMercy'); // <--- ADD THIS
+  return await callAI(messages, 0.9, 1500, 'NoMercy'); // <--- ADD THIS
 }
 
 // ============================================
@@ -484,7 +484,7 @@ Write ONLY what they asked for. Match the tone and style of the surrounding text
     { role: "user", content: userPrompt }
   ];
   
-  return await callAI(messages, 0.9, 3000, 'Invoke'); // <--- ADD THIS
+  return await callAI(messages, 0.85, 800, 'Invoke'); // <--- ADD THIS
 }
 
 // ============================================
@@ -1136,6 +1136,7 @@ app.listen(PORT, () => {
   console.log(`   Models: ${PRIMARY_MODEL}, ${BACKUP_MODEL}, ${TERTIARY_MODEL}`);
   console.log(`   API Key configured: ${process.env.OPENROUTER_API_KEY ? 'YES ✅' : 'NO ❌'}`);
 });
+
 
 
 
