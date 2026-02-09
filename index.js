@@ -16,9 +16,9 @@ const BACKUP_MODEL = "deepseek/deepseek-v3.2";
 const TERTIARY_MODEL = "mistralai/mistral-large";
 
 // ============================================
-// AI CALL WITH FALLBACK
+// AI CALL WITH FALLBACK + TRAINING DATA LOGGING
 // ============================================
-async function callAI(messages, temperature = 0.9, maxTokens = 2500) {
+async function callAI(messages, temperature = 0.9, maxTokens = 2500, buttonType = null) {
   const models = [PRIMARY_MODEL, BACKUP_MODEL, TERTIARY_MODEL];
   const apiKey = process.env.OPENROUTER_API_KEY;
   
@@ -53,8 +53,15 @@ async function callAI(messages, temperature = 0.9, maxTokens = 2500) {
       }
       
       const data = await response.json();
+      const output = data.choices[0].message.content;
       console.log(`✅ Success with ${model}`);
-      return data.choices[0].message.content;
+      
+      // 🔥 LOG TO TRAINING DATA FILE (only for writing functions)
+      if (buttonType && shouldLogForTraining(buttonType)) {
+        logTrainingData(buttonType, messages, output, model);
+      }
+      
+      return output;
       
     } catch (error) {
       console.error(`❌ ${model} error:`, error.message);
@@ -65,6 +72,43 @@ async function callAI(messages, temperature = 0.9, maxTokens = 2500) {
   throw new Error("All models failed");
 }
 
+// ============================================
+// FILTER WHICH ACTIONS TO LOG
+// ============================================
+function shouldLogForTraining(buttonType) {
+  const trainingActions = [
+    'unhinge',
+    'unleash', 
+    'invoke',
+    'intensify',
+    'devilPOV'
+  ];
+  return trainingActions.includes(buttonType);
+}
+
+// ============================================
+// TRAINING DATA LOGGER
+// ============================================
+function logTrainingData(buttonType, messages, output, model) {
+  const fs = require('fs');
+  const path = require('path');
+  
+  const trainingExample = {
+    button: buttonType,
+    messages: messages,
+    output: output,
+    model: model,
+    timestamp: new Date().toISOString()
+  };
+  
+  try {
+    const logPath = path.join(__dirname, 'training_data.jsonl');
+    fs.appendFileSync(logPath, JSON.stringify(trainingExample) + '\n');
+    console.log(`📊 Logged training data: ${buttonType}`);
+  } catch (err) {
+    console.error('⚠️ Training log failed (non-critical):', err);
+  }
+}
 // ============================================
 // QUERY WIX CMS
 // ============================================
@@ -342,7 +386,7 @@ async function handleUnhinge({ chapterContent }) {
     }
   ];
   
-  return await callAI(messages, 0.9, 3000);
+  return await callAI(messages, 0.9, 3000, 'unhinge'); // <--- ADD THIS
 }
 
 // ============================================
@@ -376,7 +420,7 @@ async function handleUnleash({ chapterContent, characterTags, storyTags, catalys
     { role: "user", content: `Continue this story. Pick up EXACTLY where it ends and keep going:\n\n${chapterContent}` }
   ];
   
-  return await callAI(messages, 0.85, 2000);
+  return await callAI(messages, 0.9, 3000, 'unleash'); // <--- ADD THIS
 }
 
 // ============================================
@@ -400,7 +444,7 @@ async function handleNoMercy({ selectedText }) {
     }
   ];
   
-  return await callAI(messages, 0.9, 1500);
+  return await callAI(messages, 0.9, 3000, 'NoMercy'); // <--- ADD THIS
 }
 
 // ============================================
@@ -440,7 +484,7 @@ Write ONLY what they asked for. Match the tone and style of the surrounding text
     { role: "user", content: userPrompt }
   ];
   
-  return await callAI(messages, 0.85, 800);
+  return await callAI(messages, 0.9, 3000, 'Invoke'); // <--- ADD THIS
 }
 
 // ============================================
@@ -464,7 +508,7 @@ async function handleIntensify({ selectedText }) {
     }
   ];
   
-  return await callAI(messages, 0.8, 1500);
+  return await callAI(messages, 0.8, 1500, 'Intensify'); // <--- ADD THIS;
 }
 
 // ============================================
@@ -603,7 +647,7 @@ async function handleCharacterChat({ userMessage, characterId, characterName, pe
     { role: "user", content: userMessage }
   ];
   
-  return await callAI(messages, 0.85, 500);
+  return await callAI(messages, 0.85, 500, 'CharacterChat'); // <--- ADD THIS;
 }
 // ============================================
 // DEVIL POV (Streamlined)
@@ -1092,6 +1136,7 @@ app.listen(PORT, () => {
   console.log(`   Models: ${PRIMARY_MODEL}, ${BACKUP_MODEL}, ${TERTIARY_MODEL}`);
   console.log(`   API Key configured: ${process.env.OPENROUTER_API_KEY ? 'YES ✅' : 'NO ❌'}`);
 });
+
 
 
 
