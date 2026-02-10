@@ -274,6 +274,23 @@ app.post('/devil-pov', async (req, res) => {
     const { action = 'devilPOV' } = req.body;
     
     console.log(`🎯 Action: ${action.toUpperCase()}`);
+    // ============================================
+// DOWNLOAD TRAINING DATA ENDPOINT
+// ============================================
+app.get('/download-training-data', (req, res) => {
+  const fs = require('fs');
+  const path = require('path');
+  const filePath = path.join(__dirname, 'training_data.jsonl');
+  
+  if (fs.existsSync(filePath)) {
+    res.download(filePath, 'training_data.jsonl');
+  } else {
+    res.status(404).json({ 
+      error: 'No training data yet',
+      message: 'Use the writing functions (unhinge, unleash, invoke, intensify, devilPOV) to generate training examples first'
+    });
+  }
+});
     
     // ============================================
     // ROUTE TO APPROPRIATE HANDLER
@@ -1136,6 +1153,7 @@ app.listen(PORT, () => {
   console.log(`   Models: ${PRIMARY_MODEL}, ${BACKUP_MODEL}, ${TERTIARY_MODEL}`);
   console.log(`   API Key configured: ${process.env.OPENROUTER_API_KEY ? 'YES ✅' : 'NO ❌'}`);
 });
+
 
 
 
