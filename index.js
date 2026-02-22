@@ -2,8 +2,9 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cors());
-app.use(express.json());
 
 // Wix API configuration
 const WIX_API_KEY = process.env.WIX_API_KEY;
@@ -1153,6 +1154,7 @@ app.listen(PORT, () => {
   console.log(`   Models: ${PRIMARY_MODEL}, ${BACKUP_MODEL}, ${TERTIARY_MODEL}`);
   console.log(`   API Key configured: ${process.env.OPENROUTER_API_KEY ? 'YES ✅' : 'NO ❌'}`);
 });
+
 
 
 
