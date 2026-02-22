@@ -660,7 +660,7 @@ async function handleCharacterChat({ userMessage, characterId, characterName, pe
   // Only use the CURRENT chat session's last 10 messages
   const messages = [
     { role: "system", content: systemPrompt },
-    ...(chatHistory || []).slice(-10), // ONLY last 10 from CURRENT session
+    ...(chatHistory || []).slice(-7), // ONLY last 10 from CURRENT session
     { role: "user", content: userMessage }
   ];
   
@@ -1153,6 +1153,7 @@ app.listen(PORT, () => {
   console.log(`   Models: ${PRIMARY_MODEL}, ${BACKUP_MODEL}, ${TERTIARY_MODEL}`);
   console.log(`   API Key configured: ${process.env.OPENROUTER_API_KEY ? 'YES ✅' : 'NO ❌'}`);
 });
+
 
 
 
