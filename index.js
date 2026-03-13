@@ -275,7 +275,7 @@ async function getCatalystIntel(catalystTags) {
 // ============================================
 // UNIFIED /devil-pov ENDPOINT - ALL ACTIONS
 // ============================================
-app.post('/devil-pov', async (req, res) => {
+app.post('/muse-mode', async (req, res) => {
   try {
     const startTime = Date.now();
     const { action = 'devilPOV' } = req.body;
@@ -1160,6 +1160,7 @@ app.listen(PORT, () => {
   console.log(`   Models: ${PRIMARY_MODEL}, ${BACKUP_MODEL}, ${TERTIARY_MODEL}`);
   console.log(`   API Key configured: ${process.env.OPENROUTER_API_KEY ? 'YES ✅' : 'NO ❌'}`);
 });
+
 
 
 
