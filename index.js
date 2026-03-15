@@ -22,6 +22,23 @@ const PRIMARY_MODEL = "deepseek/deepseek-v3.1-terminus:exacto";
 const BACKUP_MODEL = "deepseek/deepseek-v3.2";
 const TERTIARY_MODEL = "mistralai/mistral-large";
 
+// Token costs per action
+const TOKEN_COSTS = {
+    unleash: 2,
+    unhinge: 5,
+    invoke: 2,
+    devilPOV: 5,
+    noMercy: 2,
+    intensify: 2,
+    characterChat: 1,
+    overuse_scanner: 2,
+    pacing_analyzer: 2,
+    sentence_mechanics: 2,
+    dialogue_critic: 2,
+    ai_critic: 2,
+    structural_check: 2
+};
+
 // ============================================
 // AI CALL WITH FALLBACK + TRAINING DATA LOGGING
 // ============================================
@@ -158,6 +175,103 @@ async function queryWixCMS(collection, filter = {}, limit = 10) {
 }
 
 // ============================================
+// CHECK AND DEDUCT INK TOKENS
+// ============================================
+async function checkAndDeductTokens(memberId, tokenCost) {
+    if (!memberId) {
+        console.log('⚠️ No memberId provided - skipping token check');
+        return { success: true, tokensRemaining: 0 };
+    }
+
+    try {
+        console.log(`🪙 Checking tokens for member: ${memberId} | Cost: ${tokenCost}`);
+
+        const queryResponse = await fetch(
+            'https://www.wixapis.com/wix-data/v2/items/query',
+            {
+                method: 'POST',
+                headers: {
+                    'Authorization': WIX_API_KEY,
+                    'wix-site-id': WIX_SITE_ID,
+                    'wix-account-id': WIX_ACCOUNT_ID,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    dataCollectionId: 'InkTokens',
+                    query: {
+                        filter: { _owner: { $eq: memberId } }
+                    }
+                })
+            }
+        );
+
+        const queryData = await queryResponse.json();
+
+        if (!queryData.dataItems || queryData.dataItems.length === 0) {
+            console.log('❌ No InkTokens record found for member');
+            return { success: false, message: 'No Ink Token record found. Please log out and back in.' };
+        }
+
+        const record = queryData.dataItems[0].data;
+        const itemId = record._id;
+
+        // Check daily reset
+        const now = new Date();
+        const lastUpdated = new Date(record._updatedDate);
+        const isNewDay =
+            now.getUTCFullYear() !== lastUpdated.getUTCFullYear() ||
+            now.getUTCMonth() !== lastUpdated.getUTCMonth() ||
+            now.getUTCDate() !== lastUpdated.getUTCDate();
+
+        const PLAN_LIMITS = { free: 25, marked: 150, monster: 300 };
+        let currentTokens = isNewDay
+            ? (PLAN_LIMITS[record.plan] || 25)
+            : record.tokensRemaining;
+
+        console.log(`🪙 Tokens available: ${currentTokens} | Required: ${tokenCost} | Plan: ${record.plan}`);
+
+        if (currentTokens < tokenCost) {
+            return {
+                success: false,
+                message: `This action costs ${tokenCost} Ink Tokens but you only have ${currentTokens} left today. Resets at midnight! 🖊️`
+            };
+        }
+
+        // Deduct tokens
+        const newTokenCount = currentTokens - tokenCost;
+
+        await fetch(
+            `https://www.wixapis.com/wix-data/v2/items/${itemId}`,
+            {
+                method: 'PUT',
+                headers: {
+                    'Authorization': WIX_API_KEY,
+                    'wix-site-id': WIX_SITE_ID,
+                    'wix-account-id': WIX_ACCOUNT_ID,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    dataCollectionId: 'InkTokens',
+                    dataItem: {
+                        data: {
+                            ...record,
+                            tokensRemaining: newTokenCount
+                        }
+                    }
+                })
+            }
+        );
+
+        console.log(`✅ Tokens deducted. Remaining: ${newTokenCount}`);
+        return { success: true, tokensRemaining: newTokenCount };
+
+    } catch (error) {
+        console.error('❌ Token check error:', error);
+        return { success: false, message: 'Token system error. Please try again.' };
+    }
+}
+
+// ============================================
 // GET CHARACTER CONTEXT FROM WIX
 // ============================================
 async function getCharacterContext(characterTags) {
@@ -278,10 +392,25 @@ async function getCatalystIntel(catalystTags) {
 app.post('/muse-mode', async (req, res) => {
   try {
     const startTime = Date.now();
-    const { action = 'devilPOV' } = req.body;
+    const { action = 'devilPOV', memberId } = req.body;  // ← grab both here in one line
     
     console.log(`🎯 Action: ${action.toUpperCase()}`);
+
     // ============================================
+    // TOKEN CHECK
+    // ============================================
+    const tokenCost = TOKEN_COSTS[action] || 1;
+    const tokenResult = await checkAndDeductTokens(memberId, tokenCost);
+
+    if (!tokenResult.success) {
+        return res.status(429).json({
+            error: 'out_of_tokens',
+            message: tokenResult.message
+        });
+    }
+
+    console.log(`🪙 Token check passed. Remaining: ${tokenResult.tokensRemaining}`);
+// ============================================
 // DOWNLOAD TRAINING DATA ENDPOINT
 // ============================================
 app.get('/download-training-data', (req, res) => {
