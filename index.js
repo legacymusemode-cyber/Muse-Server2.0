@@ -187,25 +187,24 @@ async function checkAndDeductTokens(memberId, tokenCost) {
         console.log(`🪙 Checking tokens for member: ${memberId} | Cost: ${tokenCost}`);
 
         const queryResponse = await fetch(
-            'https://www.wixapis.com/wix-data/v2/items/query',
-            {
-                method: 'POST',
-                headers: {
-                    'Authorization': WIX_API_KEY,
-                    'wix-site-id': WIX_SITE_ID,
-                    'wix-account-id': WIX_ACCOUNT_ID,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    dataCollectionId: 'InkTokens',
-                    query: {
-                        filter: { memberId: { "$eq": memberId } }
-                    }
-                },
-    options: {
-        suppressCache: true  // ← forces fresh read every time
-    }
-})
+    'https://www.wixapis.com/wix-data/v2/items/query',
+    {
+        method: 'POST',
+        headers: {
+            'Authorization': WIX_API_KEY,
+            'wix-site-id': WIX_SITE_ID,
+            'wix-account-id': WIX_ACCOUNT_ID,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            dataCollectionId: 'InkTokens',
+            options: { suppressCache: true },
+            query: {
+                filter: { memberId: { "$eq": memberId } }
+            }
+        })  // ← closes JSON.stringify
+    }   // ← closes fetch options object
+);  // ← closes fetch call
 
         const queryData = await queryResponse.json();
 
