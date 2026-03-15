@@ -223,6 +223,72 @@ async function checkAndDeductTokens(memberId, tokenCost) {
             now.getUTCFullYear() !== lastUpdated.getUTCFullYear() ||
             now.getUTCMonth() !== lastUpdated.getUTCMonth() ||
             now.getUTCDate() !== lastUpdated.getUTCDate();
+// ============================================
+// IRON MARGINS FREE MONTHLY CHECK
+// ============================================
+const ironMarginActions = [
+    'overuse_scanner',
+    'pacing_analyzer', 
+    'sentence_mechanics',
+    'dialogue_critic',
+    'ai_critic',
+    'structural_check'
+];
+
+if (ironMarginActions.includes(action)) {
+    
+    // Check if new month
+    const lastIronReset = record.ironMarginsReset 
+        ? new Date(record.ironMarginsReset) 
+        : new Date(0);
+    
+    const isNewMonth = 
+        now.getUTCMonth() !== lastIronReset.getUTCMonth() ||
+        now.getUTCFullYear() !== lastIronReset.getUTCFullYear();
+    
+    const currentUsed = isNewMonth ? 0 : (record.ironMarginsUsed || 0);
+    
+    console.log(`📜 Iron Margins used: ${currentUsed}/5 this month`);
+    
+    if (currentUsed < 5) {
+        // Still has free uses - update count but skip token deduction
+        await fetch(
+            `https://www.wixapis.com/wix-data/v2/items/${itemId}`,
+            {
+                method: 'PUT',
+                headers: {
+                    'Authorization': WIX_API_KEY,
+                    'wix-site-id': WIX_SITE_ID,
+                    'wix-account-id': WIX_ACCOUNT_ID,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    dataCollectionId: 'InkTokens',
+                    dataItem: {
+                        data: {
+                            ...record,
+                            ironMarginsUsed: currentUsed + 1,
+                            ironMarginsReset: isNewMonth 
+                                ? now.toISOString() 
+                                : record.ironMarginsReset
+                        }
+                    }
+                })
+            }
+        );
+        
+        console.log(`✅ Iron Margins free use ${currentUsed + 1}/5 consumed`);
+        return { 
+            success: true, 
+            tokensRemaining: currentTokens,
+            freeUse: true,
+            ironMarginsRemaining: 4 - currentUsed
+        };
+    }
+    
+    console.log(`💀 Iron Margins free uses exhausted - deducting 2 tokens`);
+    // All 5 free uses gone - fall through to normal token deduction
+}
 
         const PLAN_LIMITS = { free: 25, marked: 150, monster: 300 };
         let currentTokens = isNewDay
