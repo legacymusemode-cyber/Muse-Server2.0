@@ -177,7 +177,7 @@ async function queryWixCMS(collection, filter = {}, limit = 10) {
 // ============================================
 // CHECK AND DEDUCT INK TOKENS
 // ============================================
-async function checkAndDeductTokens(memberId, tokenCost) {
+async function checkAndDeductTokens(memberId, tokenCost, action) {
     if (!memberId) {
         console.log('⚠️ No memberId provided - skipping token check');
         return { success: true, tokensRemaining: 0 };
