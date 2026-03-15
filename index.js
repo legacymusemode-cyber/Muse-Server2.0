@@ -467,8 +467,7 @@ app.post('/muse-mode', async (req, res) => {
     // TOKEN CHECK
     // ============================================
     const tokenCost = TOKEN_COSTS[action] || 1;
-    const tokenResult = await checkAndDeductTokens(memberId, tokenCost);
-
+    const tokenResult = await checkAndDeductTokens(memberId, tokenCost, action); // ← add action here
     if (!tokenResult.success) {
         return res.status(429).json({
             error: 'out_of_tokens',
