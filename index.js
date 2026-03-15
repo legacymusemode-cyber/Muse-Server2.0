@@ -199,7 +199,7 @@ async function checkAndDeductTokens(memberId, tokenCost) {
                 body: JSON.stringify({
                     dataCollectionId: 'InkTokens',
                     query: {
-                        filter: { userEmail: { $eq: memberId } }
+                        filter: { memberId: { "$eq": memberId } }
                     }
                 })
             }
