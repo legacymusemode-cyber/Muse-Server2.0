@@ -97,43 +97,6 @@ async function callAI(messages, temperature = 0.9, maxTokens = 2500, buttonType 
 }
 
 // ============================================
-// FILTER WHICH ACTIONS TO LOG
-// ============================================
-function shouldLogForTraining(buttonType) {
-  const trainingActions = [
-    'unhinge',
-    'unleash', 
-    'invoke',
-    'intensify',
-    'devilPOV'
-  ];
-  return trainingActions.includes(buttonType);
-}
-
-// ============================================
-// TRAINING DATA LOGGER
-// ============================================
-function logTrainingData(buttonType, messages, output, model) {
-  const fs = require('fs');
-  const path = require('path');
-  
-  const trainingExample = {
-    button: buttonType,
-    messages: messages,
-    output: output,
-    model: model,
-    timestamp: new Date().toISOString()
-  };
-  
-  try {
-    const logPath = path.join(__dirname, 'training_data.jsonl');
-    fs.appendFileSync(logPath, JSON.stringify(trainingExample) + '\n');
-    console.log(`📊 Logged training data: ${buttonType}`);
-  } catch (err) {
-    console.error('⚠️ Training log failed (non-critical):', err);
-  }
-}
-// ============================================
 // QUERY WIX CMS
 // ============================================
 async function queryWixCMS(collection, filter = {}, limit = 10) {
