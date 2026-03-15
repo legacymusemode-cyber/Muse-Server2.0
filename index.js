@@ -201,9 +201,11 @@ async function checkAndDeductTokens(memberId, tokenCost) {
                     query: {
                         filter: { memberId: { "$eq": memberId } }
                     }
-                })
-            }
-        );
+                },
+    options: {
+        suppressCache: true  // ← forces fresh read every time
+    }
+})
 
         const queryData = await queryResponse.json();
 
