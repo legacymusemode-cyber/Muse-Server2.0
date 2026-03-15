@@ -1251,63 +1251,6 @@ ${text}`
     throw new Error("Failed to parse structural analysis");
   }
 }
-// ============================================
-// TAG JANITOR
-// ============================================
-
-async function handleTagGeneration({ name, type }) {
-  console.log(`🏷️ Generating ${type} tag for: ${name}`);
-  
-  if (!name || name.trim().length === 0) {
-    throw new Error("No name provided for tag generation");
-  }
-  
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  
-  if (!apiKey) {
-    throw new Error("No API key configured");
-  }
-  
-  let prompt;
-  if (type === 'character') {
-    prompt = `Generate a character tag. Rules: 1) Must start with @, 2) Format: @FirstLast or @FLast if no last name, 3) No spaces, PascalCase, 4) Remove special characters. Name: ${name}. ${existingTags?.length ? `Avoid these existing tags: ${existingTags.join(', ')}` : ''} Return ONLY the tag, nothing else.`;
-  } else {
-    prompt = `Generate a story tag. Rules: 1) Must start with @, 2) Format: @TitleWithoutSpaces, 3) PascalCase, 4) Keep concise. Title: ${name}. ${existingTags?.length ? `Avoid these existing tags: ${existingTags.join(', ')}` : ''} Return ONLY the tag, nothing else.`;
-  }
-  
-  try {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-        'HTTP-Referer': 'https://amygonzalez305.wixsite.com/the-draft-reaper/devil-muse-server',
-        'X-Title': 'Devil Muse - Tag Janitor'
-      },
-      body: JSON.stringify({
-        model: "openai/gpt-4.1-mini",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.1, // Very low for consistency
-        max_tokens: 50
-      })
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Tag generation failed: ${errorText}`);
-    }
-    
-    const data = await response.json();
-    const tag = data.choices[0].message.content.trim();
-    
-    console.log(`✅ Generated tag: ${tag}`);
-    return { tag };
-    
-  } catch (error) {
-    console.error(`❌ Tag generation error:`, error.message);
-    throw error;
-  }
-}
 
 // ============================================
 // START SERVER
