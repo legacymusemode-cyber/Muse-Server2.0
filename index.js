@@ -516,9 +516,9 @@ app.get('/download-training-data', (req, res) => {
     result = await handleStructuralCheck(req.body);
     break;
 
-  case 'tag_generation':
-  result = await handleTagGeneration(req.body);
-  break;
+  case 'chapter_summary':
+    result = await handleChapterSummary(req.body);
+    break;
   
   // ... rest of existing cases ...
     }
@@ -1250,6 +1250,87 @@ ${text}`
   } catch (e) {
     throw new Error("Failed to parse structural analysis");
   }
+}
+
+// ============================================
+// SUMMARY MODEL
+// ============================================
+async function handleChapterSummary({ chapterId, storyId }) {
+    try {
+        console.log(`📖 Generating summary for chapter: ${chapterId}`);
+
+        // 1. Query chapter content using existing queryWixCMS
+        const chapterResult = await queryWixCMS('BackupChapters', {
+            fieldName: '_id',
+            operator: '$eq',
+            value: chapterId
+        }, 1);
+
+        const chapter = chapterResult.items[0]?.data;
+        if (!chapter?.chapterContent) {
+            console.log('⚠️ No chapter content found');
+            return { success: false };
+        }
+
+        // 2. Send to Sonnet using existing callClaudeForAnalysis
+        const summary = await callClaudeForAnalysis([{
+            role: 'user',
+            content: `Read this chapter. Return ONLY:
+            3 lines maximum of key events
+            1 line of foreshadowing based on how it ends
+
+           No labels. No preamble. Just the text.
+
+Chapter:
+${chapter.chapterContent}`
+        }], 200);
+
+        // 3. Patch chapterSummary back to Wix
+        await updateWixItem('BackupChapters', chapterId, { chapterSummary: summary });
+
+        console.log(`✅ Summary inserted for ${chapterId}`);
+        return { success: true };
+
+    } catch (error) {
+        console.error('❌ Chapter summary error:', error);
+        return { success: false };
+    }
+}
+
+// ============================================
+// UPDATE SUMMARY TO WIX
+// ============================================
+async function updateWixItem(collection, itemId, fields) {
+    try {
+        const response = await fetch(`https://www.wixapis.com/wix-data/v2/items/${itemId}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': WIX_API_KEY,
+                'wix-site-id': WIX_SITE_ID,
+                'wix-account-id': WIX_ACCOUNT_ID
+            },
+            body: JSON.stringify({
+                dataCollectionId: collection,
+                dataItem: {
+                    data: fields
+                }
+            })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`❌ Wix update error:`, errorText);
+            return false;
+        }
+
+        console.log(`✅ Wix item updated: ${itemId}`);
+        return true;
+
+    } catch (error) {
+        console.error(`❌ Update error:`, error);
+        return false;
+    }
 }
 
 // ============================================
