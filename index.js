@@ -1329,6 +1329,23 @@ async function updateWixItem(collection, itemId, fields) {
     }
 }
 
+app.post('/chapter-summary', async (req, res) => {
+    console.log('📬 Chapter summary received:', req.body);
+    
+    const { chapterId, storyId } = req.body;
+    
+    if (!chapterId || !storyId) {
+        console.error('❌ Missing chapterId or storyId');
+        return res.json({ received: false });
+    }
+    
+    // Respond immediately. Fire and forget. 📬
+    res.json({ received: true });
+    
+    // Handle async in background
+    handleChapterSummary({ chapterId, storyId });
+});
+
 // ============================================
 // START SERVER
 // ============================================
