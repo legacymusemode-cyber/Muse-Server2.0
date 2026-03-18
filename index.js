@@ -79,11 +79,7 @@ async function callAI(messages, temperature = 0.9, maxTokens = 2500, buttonType 
       const data = await response.json();
       const output = data.choices[0].message.content;
       console.log(`✅ Success with ${model}`);
-      
-      // 🔥 LOG TO TRAINING DATA FILE (only for writing functions)
-      if (buttonType && shouldLogForTraining(buttonType)) {
-        logTrainingData(buttonType, messages, output, model);
-      }
+    
       
       return output;
       
