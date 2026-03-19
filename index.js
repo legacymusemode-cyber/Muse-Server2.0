@@ -1332,44 +1332,34 @@ async function updateWixItem(collection, itemId, fields) {
 app.post('/chapter-summary', async (req, res) => {
     console.log('📬 Chapter summary received:', req.body);
     
-    const { chapterId, storyId } = req.body;
+    const { storyId, ownerId } = req.body;
     
-    if (!storyId) {
-        console.error('❌ Missing storyId');
+    if (!ownerId) {
+        console.error('❌ Missing ownerId');
         return res.json({ received: false });
     }
     
     res.json({ received: true });
     
     try {
-        let targetChapterId = chapterId;
+        const chaptersResult = await queryWixCMS('BackupChapters', {
+            fieldName: '_owner',
+            operator: '$eq',
+            value: ownerId
+        }, 100);
         
-        // If no chapterId, find the most recent chapter for this story
-        if (!targetChapterId) {
-            console.log('🔍 No chapterId - finding most recent chapter for story:', storyId);
-            
-            const chaptersResult = await queryWixCMS('BackupChapters', {
-                fieldName: 'Stories_chapters',
-                operator: '$hasSome',
-                value: [storyId]
-            }, 100);
-            
-            const chapters = chaptersResult.items || [];
-            const latest = chapters[chapters.length - 1];
-            
-            if (!latest) {
-                console.error('❌ No chapters found for story');
-                return;
-            }
-            
-            targetChapterId = latest.data._id;
-            console.log('✅ Found latest chapter:', targetChapterId);
-        }
+        const chapters = chaptersResult.items || [];
+        const latest = chapters[chapters.length - 1];
         
-        handleChapterSummary({ chapterId: targetChapterId, storyId });
+        if (!latest) return;
+        
+        const chapterId = latest.data._id;
+        console.log('✅ Latest chapter found:', chapterId);
+        
+        handleChapterSummary({ chapterId, storyId });
         
     } catch (error) {
-        console.error('❌ Chapter summary error:', error.message);
+        console.error('❌ Error:', error.message);
     }
 });
 
