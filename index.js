@@ -1334,16 +1334,43 @@ app.post('/chapter-summary', async (req, res) => {
     
     const { chapterId, storyId } = req.body;
     
-    if (!chapterId || !storyId) {
-        console.error('❌ Missing chapterId or storyId');
+    if (!storyId) {
+        console.error('❌ Missing storyId');
         return res.json({ received: false });
     }
     
-    // Respond immediately. Fire and forget. 📬
     res.json({ received: true });
     
-    // Handle async in background
-    handleChapterSummary({ chapterId, storyId });
+    try {
+        let targetChapterId = chapterId;
+        
+        // If no chapterId, find the most recent chapter for this story
+        if (!targetChapterId) {
+            console.log('🔍 No chapterId - finding most recent chapter for story:', storyId);
+            
+            const chaptersResult = await queryWixCMS('BackupChapters', {
+                fieldName: 'Stories_chapters',
+                operator: '$hasSome',
+                value: [storyId]
+            }, 100);
+            
+            const chapters = chaptersResult.items || [];
+            const latest = chapters[chapters.length - 1];
+            
+            if (!latest) {
+                console.error('❌ No chapters found for story');
+                return;
+            }
+            
+            targetChapterId = latest.data._id;
+            console.log('✅ Found latest chapter:', targetChapterId);
+        }
+        
+        handleChapterSummary({ chapterId: targetChapterId, storyId });
+        
+    } catch (error) {
+        console.error('❌ Chapter summary error:', error.message);
+    }
 });
 
 // ============================================
