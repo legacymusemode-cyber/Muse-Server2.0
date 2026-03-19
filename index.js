@@ -1330,37 +1330,18 @@ async function updateWixItem(collection, itemId, fields) {
 }
 
 app.post('/chapter-summary', async (req, res) => {
-    console.log('📬 Chapter summary received:', req.body);
+    const { chapterId, chapterContent, storyId } = req.body;
     
-    const { storyId, ownerId } = req.body;
+    console.log('📬 Received - chapterId:', chapterId);
     
-    if (!ownerId) {
-        console.error('❌ Missing ownerId');
+    if (!chapterId || !chapterContent) {
+        console.error('❌ Missing data');
         return res.json({ received: false });
     }
     
     res.json({ received: true });
     
-    try {
-        const chaptersResult = await queryWixCMS('BackupChapters', {
-            fieldName: '_owner',
-            operator: '$eq',
-            value: ownerId
-        }, 100);
-        
-        const chapters = chaptersResult.items || [];
-        const latest = chapters[chapters.length - 1];
-        
-        if (!latest) return;
-        
-        const chapterId = latest.data._id;
-        console.log('✅ Latest chapter found:', chapterId);
-        
-        handleChapterSummary({ chapterId, storyId });
-        
-    } catch (error) {
-        console.error('❌ Error:', error.message);
-    }
+    handleChapterSummary({ chapterId, chapterContent, storyId });
 });
 
 // ============================================
