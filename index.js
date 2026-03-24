@@ -1251,99 +1251,50 @@ ${text}`
 // ============================================
 // SUMMARY MODEL
 // ============================================
-async function handleChapterSummary({ chapterId, storyId }) {
+app.post('/chapter-summary', async (req, res) => {
+    const { chapterId, chapterContent } = req.body;
+    
+    if (!chapterId || !chapterContent) {
+        return res.json({ success: false, error: 'Missing data' });
+    }
+    
     try {
-        console.log(`📖 Generating summary for chapter: ${chapterId}`);
-
-        // 1. Query chapter content using existing queryWixCMS
-        const chapterResult = await queryWixCMS('BackupChapters', {
-            fieldName: '_id',
-            operator: '$eq',
-            value: chapterId
-        }, 1);
-
-        const chapter = chapterResult.items[0]?.data;
-        if (!chapter?.chapterContent) {
-            console.log('⚠️ No chapter content found');
-            return { success: false };
-        }
-
-        // 2. Send to Sonnet using existing callClaudeForAnalysis
         const summary = await callClaudeForAnalysis([{
             role: 'user',
             content: `Read this chapter. Return ONLY:
-            3 lines maximum of key events
-            1 line of foreshadowing based on how it ends
+3 lines maximum of key events
+1 line of foreshadowing based on how it ends
 
-           No labels. No preamble. Just the text.
+No labels. No preamble. Just the text.
 
 Chapter:
-${chapter.chapterContent}`
+${chapterContent}`
         }], 200);
-
-        // 3. Patch chapterSummary back to Wix
-        await updateWixItem('BackupChapters', chapterId, { chapterSummary: summary });
-
-        console.log(`✅ Summary inserted for ${chapterId}`);
-        return { success: true };
-
+        
+        res.json({ success: true, summary: summary });
+        
     } catch (error) {
-        console.error('❌ Chapter summary error:', error);
-        return { success: false };
+        console.error('❌ Summary error:', error.message);
+        res.json({ success: false, error: error.message });
     }
-}
-
-// ============================================
-// UPDATE SUMMARY TO WIX
-// ============================================
-async function updateWixItem(collection, itemId, fields) {
-    try {
-        const response = await fetch(`https://www.wixapis.com/wix-data/v2/items/${itemId}`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': WIX_API_KEY,
-                'wix-site-id': WIX_SITE_ID,
-                'wix-account-id': WIX_ACCOUNT_ID
-            },
-            body: JSON.stringify({
-                dataCollectionId: collection,
-                dataItem: {
-                    data: fields
-                }
-            })
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`❌ Wix update error:`, errorText);
-            return false;
-        }
-
-        console.log(`✅ Wix item updated: ${itemId}`);
-        return true;
-
-    } catch (error) {
-        console.error(`❌ Update error:`, error);
-        return false;
-    }
-}
-
-app.post('/chapter-summary', async (req, res) => {
-    const { chapterId, chapterContent, storyId } = req.body;
-    
-    console.log('📬 Received - chapterId:', chapterId);
-    
-    if (!chapterId || !chapterContent) {
-        console.error('❌ Missing data');
-        return res.json({ received: false });
-    }
-    
-    res.json({ received: true });
-    
-    handleChapterSummary({ chapterId, chapterContent, storyId });
 });
 
+app.post('/update-chapter-summary', async (req, res) => {
+    const { chapterId, chapterSummary } = req.body;
+    
+    if (!chapterId || !chapterSummary) {
+        return res.json({ success: false });
+    }
+    
+    try {
+        await updateWixItem('BackupChapters', chapterId, { 
+            chapterSummary: chapterSummary 
+        });
+        res.json({ success: true });
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
 // ============================================
 // START SERVER
 // ============================================
