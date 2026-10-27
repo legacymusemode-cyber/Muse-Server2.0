@@ -30,9 +30,9 @@ const WIX_ACCOUNT_ID = process.env.WIX_ACCOUNT_ID;
 const WIX_SITE_ID = process.env.WIX_SITE_ID;
 
 // Model configuration
-const PRIMARY_MODEL = "deepseek/deepseek-v3.1-terminus:exacto";
-const BACKUP_MODEL = "deepseek/deepseek-v3.2";
-const TERTIARY_MODEL = "mistralai/mistral-large";
+const PRIMARY_MODEL = "deepseek/deepseek-v3.1-terminus";
+const BACKUP_MODEL = "deepseek/deepseek-v4.1-flash";
+const TERTIARY_MODEL = "mistralai/mistral-nemo";
 
 // ============================================
 // AI CALL WITH FALLBACK + TRAINING DATA LOGGING
